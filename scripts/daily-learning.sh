@@ -43,16 +43,17 @@ OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
-# System prompt for ELI5-style learning
-SYSTEM_PROMPT = """You are a friendly, patient teacher explaining concepts to a curious beginner.
+# System prompt for bilingual ELI5-style learning
+SYSTEM_PROMPT = """You are a friendly, patient teacher explaining concepts to a curious university student.
 Generate 3-5 concise learning points in ELI5 (Explain Like I'm 5) style.
-Each point should be:
-- Simple and easy to understand
-- Concrete (use analogies when helpful)
-- Self-contained (understandable on its own)
+CRITICAL: Each learning point must have BOTH English AND Traditional Chinese (繁體中文).
 
-Output format: JSON array of strings, each string is one learning point.
-Example: ["Light bulbs glow because electricity heats a thin wire until it glows", "..."]
+For each point, provide:
+1. English explanation (2-4 sentences)
+2. Traditional Chinese translation (2-4 sentences)
+
+Output format: JSON array of objects with 'en' and 'zh' keys.
+Example: [{"en": "Light bulbs glow because...", "zh": "電燈泡發光是因為..."}, ...]"""
 """
 
 # ============================================================================
@@ -181,9 +182,9 @@ def call_ollama(prompt: str, model: str = "llama3.2") -> list[str]:
         raise AIProviderError(f"Ollama API error: {e}")
 
 
-def generate_learning_points(topic: str, folder: str) -> list[str]:
+def generate_learning_points(topic: str, folder: str) -> list[dict]:
     """Generate learning points using configured AI provider."""
-    prompt = f"Generate ELI5 learning points for the topic: {topic}"
+    prompt = f"Generate bilingual ELI5 learning points (English + Traditional Chinese) for the topic: {topic}"
 
     if AI_PROVIDER == "openai":
         return call_openai(prompt)
@@ -241,30 +242,39 @@ def parse_index() -> list[tuple[str, str, str]]:
 # File Generation
 # ============================================================================
 
-def generate_page_content(topic: str, folder: str, points: list[str]) -> str:
-    """Generate markdown content for a daily learning page."""
+def generate_page_content(topic: str, folder: str, points: list[dict]) -> str:
+    """Generate markdown content for a daily learning page with bilingual format."""
     today = date.today()
     date_str = today.strftime("%Y-%m-%d")
     day_name = today.strftime("%A")
 
-    # Build bullet points
-    bullet_points = []
+    # Build bilingual learning points
+    content_parts = []
     for i, point in enumerate(points, 1):
-        # Clean up the point text
-        point = point.strip()
-        if not point:
+        en_text = point.get("en", "").strip()
+        zh_text = point.get("zh", "").strip()
+        if not en_text and not zh_text:
             continue
-        # Remove leading numbers/bullets if present
-        point = re.sub(r"^\d+[\.\)]\s*", "", point)
-        bullet_points.append(f"{i}. {point}")
 
-    content = f"""# Learning: {topic} — {date_str}
+        content_parts.append(f"## Learning Point {i}\n")
+        content_parts.append("\n### English\n")
+        content_parts.append(f"{en_text}\n")
+        content_parts.append("\n### 中文\n")
+        content_parts.append(f"{zh_text}\n")
+
+    content = f"""---
+title: "Learning: {topic} — {date_str}"
+tags:
+  - learning
+  - {folder}
+created: {date_str}
+---
+
+# Learning: {topic} — {date_str}
 
 > Generated on {day_name}, {date_str}
 
-## What I Learned Today
-
-{chr(10).join(bullet_points)}
+{"".join(content_parts)}
 
 ## Key Takeaways
 
