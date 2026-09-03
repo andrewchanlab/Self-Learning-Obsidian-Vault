@@ -1,23 +1,37 @@
 name: Daily Learning Vault
 
 on:
-  schedule:
-    # Run at 8:00 AM UTC daily
-    # Format: minute hour day-of-month month day-of-week
-    - cron: '0 8 * * *'
-  
-  # Allow manual trigger
+  # ============================================================
+  # TEMPLATE USERS: Set to false to disable auto-schedule
+  # ============================================================
   workflow_dispatch:
     inputs:
       message:
         description: 'Custom commit message (optional)'
         required: false
         type: string
+      run_schedule:
+        description: 'Enable daily schedule?'
+        required: true
+        type: choice
+        options:
+          - disabled
+          - enabled
 
-  # Also run on push to main (optional)
+# ============================================================
+# FORK USERS: Change 'andrewchanlab/Self-Learning-Obsidian-Vault'
+# to your 'username/repo-name' below, or delete this 'if' line
+# to allow forks to run.
+# NOTE: To enable daily schedule, uncomment the 'schedule' block below.
+# ============================================================
+# schedule:
+#   # Run at 7:00 AM HKT (23:00 UTC) daily
+#   # Uncomment the line above to enable auto-schedule
+#   - cron: '0 23 * * *'
+
   push:
     branches:
-      - main
+      - master
 
 jobs:
   daily-learning:
