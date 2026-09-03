@@ -17,3 +17,17 @@ Streamlit bridges the gap between Python scripts and production web apps — no 
 - Data Visualization
 - Python Web Frameworks
 - Rapid Prototyping
+
+---
+
+# Streamlit 讓 Python 腳本瞬間變成 Web 應用
+
+Streamlit 讓數據科學家只需寫 Python，就能立刻獲得一個可運作的 Web 應用。通常開發網站需要 HTML、CSS、JavaScript 和後端知識。但有了 Streamlit，你只需調用 `st.write()` 和 `st.line_chart()` 這類函數——它會自動處理所有網頁渲染。這項技術讓數據可視化變得大眾化。
+
+## 核心要點
+Streamlit 橋接了 Python 腳本與正式 Web 應用之間的鴻溝——無需任何網頁開發知識。
+
+## 相關概念
+- 數據可視化
+- Python Web 框架
+- 快速原型開發
