@@ -17,3 +17,17 @@ NestJS's middleware pipeline (Guards, Interceptors, Pipes) provides hooks for au
 - Middleware
 - Request Pipeline
 - Cross-Cutting Concerns
+
+---
+
+## 中文：守衛攔截器與管道——請求處理流水線
+
+守衛（Guards）在處理器運行前檢查權限（像門警）。攔截器（Interceptors）包裝回應（用於日誌、快取、轉換）。管道（Pipes）驗證和轉換輸入資料。這三層讓你可以在不污染業務邏輯的情況下添加橫切關注點。
+
+## 核心要點
+NestJS 的中介層流水線（守衛、攔截器、管道）提供了認證、日誌和驗證的掛鉤點，且不觸碰業務邏輯。
+
+## 相關概念
+- 中介層
+- 請求流水線
+- 橫切關注點

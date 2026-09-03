@@ -17,3 +17,17 @@ NestJS enforces a clean separation between routing (controllers) and business lo
 - MVC Pattern
 - Business Logic
 - REST API
+
+---
+
+## 中文：控制器指揮流量，服務執行業務
+
+控制器接收 HTTP 請求、提取參數，然後調用正確的服務方法。控制器本身不含業務邏輯——它們將工作委託給服務，由服務來處理「如何做」。這種分離使業務邏輯可以在不同入口點（HTTP、WebSockets、gRPC）復用。
+
+## 核心要點
+NestJS 強制將路由（控制器）和業務邏輯（服務）分離，使邏輯可復用且易於測試。
+
+## 相關概念
+- MVC 模式
+- 業務邏輯
+- REST API

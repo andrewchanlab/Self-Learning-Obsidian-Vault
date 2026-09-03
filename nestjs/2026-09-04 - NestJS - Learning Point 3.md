@@ -17,3 +17,17 @@ NestJS's dependency injection container eliminates manual object wiring — the 
 - Inversion of Control
 - Dependency Injection
 - IoC Container
+
+---
+
+## 中文：依賴注入自動組裝元件
+
+NestJS 的 IoC 容器自動解析並注入依賴。你只需在建構函式中宣告所需的服務，Nest 就會找到或建立它。你永遠不需要寫 `new UserService()`——框架會自動處理實例化和生命週期管理。
+
+## 核心要點
+NestJS 的依賴注入容器消除了手動組裝物件的繁瑣——框架自動管理服務的生命週期。
+
+## 相關概念
+- 控制反轉
+- 依賴注入
+- IoC 容器
