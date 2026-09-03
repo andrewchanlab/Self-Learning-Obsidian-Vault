@@ -1,6 +1,6 @@
 name: Daily Learning Vault
 
-on:
+"on":
   # ============================================================
   # TEMPLATE USERS: Set to false to disable auto-schedule
   # ============================================================
