@@ -17,3 +17,12 @@ Flask's extension ecosystem lets you build exactly what you need — start bare 
 - Flask Extensions
 - Plugin Ecosystem
 - Modular Design
+
+---
+
+## 中文：擴展功能填補空白 — Flask 本身很精簡
+
+Flask-SQLAlchemy 加入資料庫 ORM。Flask-Login 加入認證功能。Flask-RESTful 構建 REST API。Flask-Bcrypt 雜湊密碼。每個擴展都與 Flask 的應用程式模式整合，但各自獨立維護。這樣保持核心小而穩定。
+
+### 核心要點
+Flask 的擴展生態系統讓你按需構建 — 從精簡開始，隨著需求增長再加入 Flask-SQLAlchemy、Flask-Login 或 Flask-RESTful。
