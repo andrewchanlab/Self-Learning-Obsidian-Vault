@@ -82,7 +82,7 @@ def call_openai(prompt: str, model: str = AI_MODEL) -> list[str]:
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.7,
-        "max_tokens": 4000
+        "max_tokens": 8500
     }
 
     data = json.dumps(payload).encode("utf-8")
