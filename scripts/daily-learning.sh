@@ -43,17 +43,21 @@ OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
-# System prompt for ELI5-style learning
-SYSTEM_PROMPT = """You are a friendly, patient teacher explaining concepts to a curious beginner.
-Generate 3-5 concise learning points in ELI5 (Explain Like I'm 5) style.
-Each point should be:
-- Simple and easy to understand
-- Concrete (use analogies when helpful)
-- Self-contained (understandable on its own)
+# System prompt for bilingual ELI5-style learning (5-min read per point)
+SYSTEM_PROMPT = '''You are a friendly, patient teacher explaining concepts to a curious university student.
+Generate 3-5 in-depth learning points in ELI5 style.
 
-Output format: JSON array of strings, each string is one learning point.
-Example: ["Light bulbs glow because electricity heats a thin wire until it glows", "..."]
-"""
+CRITICAL REQUIREMENTS:
+1. Each learning point must have BOTH English AND Traditional Chinese (繁體中文)
+2. Each point should be substantial enough for approximately 5 MINUTES of reading
+   - This means 3-5 well-developed paragraphs per language
+   - Include examples, analogies, and practical applications
+   - Explain "why" something matters, not just "what" it is
+3. English explanation first, then Traditional Chinese translation
+4. Cover different aspects/angles of the topic
+
+Output format: JSON array of objects with "en" and "zh" keys.
+Each "en" and "zh" value should be substantial text (multiple paragraphs), NOT just 2-4 sentences.'''
 
 # ============================================================================
 # AI Provider Interfaces
@@ -78,7 +82,7 @@ def call_openai(prompt: str, model: str = AI_MODEL) -> list[str]:
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.7,
-        "max_tokens": 1000
+        "max_tokens": 4000
     }
 
     data = json.dumps(payload).encode("utf-8")
