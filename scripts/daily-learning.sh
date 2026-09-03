@@ -299,11 +299,27 @@ def create_topic_folder(folder: str) -> Path:
     return folder_path
 
 
-def save_daily_page(topic: str, folder: str, points: list[str]) -> Path:
+def save_daily_page(topic: str, folder: str, points: list[dict]) -> Path:
     """Save a daily learning page and return the file path."""
     folder_path = create_topic_folder(folder)
     today = date.today()
-    filename = f"{today.isoformat()}.md"
+
+    # Generate a meaningful header from the first point's English text
+    header_slug = "daily-learning"
+    if points and len(points) > 0:
+        first_en = points[0].get("en", "")
+        if first_en:
+            # Take first ~15 words, make it URL-safe
+            words = first_en.split()[:15]
+            header_slug = "-".join(words)
+            # Remove non-alphanumeric chars (keep Chinese and hyphens)
+            import re
+            header_slug = re.sub(r'[^a-zA-Z0-9\u4e00-\u9fff-]', '', header_slug)
+            # Truncate to keep filename reasonable
+            if len(header_slug) > 50:
+                header_slug = header_slug[:50]
+
+    filename = f"{today.isoformat()}-{header_slug}.md"
     file_path = folder_path / filename
 
     content = generate_page_content(topic, folder, points)
