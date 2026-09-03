@@ -17,3 +17,17 @@ The S3 API compatibility means MinIO is a drop-in replacement for AWS S3 — too
 - API Compatibility
 - Storage Abstraction
 - Multi-Cloud Strategy
+
+---
+
+# S3 兼容意味著通用兼容性
+
+MinIO 完整實現了 Amazon S3 API，這意味著任何為 S3 開發的應用都可以零改動地直接使用 MinIO。這就像一個 USB-C 接口能接受任何 USB-C 線纜 — 無需轉接頭。boto3（AWS SDK）、rclone、甚至 AWS CLI 都可以直接對接 MinIO，在 MinIO 和 S3 之間遷移易如反掌。
+
+## 核心要點
+S3 API 兼容性使 MinIO 成為 AWS S3 的完美替代品 — 原本為 S3 設計的工具和庫無需任何代碼修改即可使用。
+
+## 相關概念
+- API 兼容性
+- 存儲抽象層
+- 多雲策略
