@@ -148,18 +148,18 @@ Library mode turns Vite into a package builder where the two decisive choices â€
 ## Diagram
 ```mermaid
 flowchart TD
-    SRC[src/index.ts + src/components/*] --> LIB[build.lib.entry]
-    LIB --> EXT{external regex}
-    EXT -->|react, react-dom| OUT[Kept as bare import]
-    EXT -->|everything else| INL[Inlined into bundle]
-    INL --> ES[dist/index.js (es)]
-    INL --> CJS[dist/index.cjs (cjs)]
-    INL --> UMD[dist/index.umd.js (umd, needs globals map)]
+    SRC["src/index.ts + src/components/*"] --> LIB[build.lib.entry]
+    LIB --> EXT{"external regex"}
+    EXT -->|react, react-dom| OUT["Kept as bare import"]
+    EXT -->|everything else| INL["Inlined into bundle"]
+    INL --> ES["dist/index.js (es)"]
+    INL --> CJS["dist/index.cjs (cjs)"]
+    INL --> UMD["dist/index.umd.js (umd, needs globals map)"]
     OUT --> ES
     OUT --> CJS
     OUT --> UMD
-    PM[output.preserveModules] -.->|optional| ES
-    PKG[package.json exports map] --> RESOLVER[Consumer bundler]
+    PM["output.preserveModules"] -.->|optional| ES
+    PKG["package.json exports map"] --> RESOLVER["Consumer bundler"]
     ES --> RESOLVER
     CJS --> RESOLVER
 ```

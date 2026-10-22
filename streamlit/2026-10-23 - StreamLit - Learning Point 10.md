@@ -100,7 +100,7 @@ password = "…"
 key = "…"
 ```
 
-有兩個部署細節會造成真實事故。第一，**CORS 與 XSRF**：Streamlit 預設會送出容許任何來源的 CORS 標頭，因為本機開發時瀏覽器與伺服器同主機。當 app 由 `analytics.example.net` 提供，但實際連去的是另一個 origin 的代理，瀏覽器會攔截 websocket 連線，除非代理改寫標頭並一致地設定 `enableCORS`。經驗法则是：當瀏覽器連代理、代理連 Streamlit 時，只有在代理自己會補上正確標頭的情況下才設 `enableCORS = false`；否則保持 CORS 開啟，並確保 `serverAddress` 與 `serverPort` 與瀏覽器實際看到的相符，因為 Streamlit 是用它們組出 websocket 網址。第二，**上傳大小**：`maxUploadSize` 預設 200 MB，超出會出現令人困惑的失敗；應當有意識地調高，而不是在生產環境才發現上限。
+有兩個部署細節會造成真實事故。第一，**CORS 與 XSRF**：Streamlit 預設會送出容許任何來源的 CORS 標頭，因為本機開發時瀏覽器與伺服器同主機。當 app 由 `analytics.example.net` 提供，但實際連去的是另一個 origin 的代理，瀏覽器會攔截 websocket 連線，除非代理改寫標頭並一致地設定 `enableCORS`。經驗法則是：當瀏覽器連代理、代理連 Streamlit 時，只有在代理自己會補上正確標頭的情況下才設 `enableCORS = false`；否則保持 CORS 開啟，並確保 `serverAddress` 與 `serverPort` 與瀏覽器實際看到的相符，因為 Streamlit 是用它們組出 websocket 網址。第二，**上傳大小**：`maxUploadSize` 預設 200 MB，超出會出現令人困惑的失敗；應當有意識地調高，而不是在生產環境才發現上限。
 
 容器的標準寫法是以 headless 模式啟動、綁定介面埠，由平台的 ingress 負責 TLS 終結：
 

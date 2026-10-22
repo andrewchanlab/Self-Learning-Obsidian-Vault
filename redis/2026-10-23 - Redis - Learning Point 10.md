@@ -35,7 +35,7 @@ The critical client-side detail: a Sentinel-aware client subscribes to `+switch-
 
 ### 中文
 
-複製（primary 加 replica）提供嘅係一份**副本**，但唔係**可用性**：如果 primary 所在機器死咗，replica 會繼續嘗試从一个已經死咗嘅 master 同步，並且唔會再接受寫入。**Redis Sentinel** 正係填補呢個缺口。Sentinel 係一個獨立、輕量嘅常駐程序，負責監察 master 同 replica；一旦 master 消失夠耐，佢就會將其中一個 replica 提升做新 master，並且重寫拓撲，令其餘 replica 轉而跟隨新 master。
+複製（primary 加 replica）提供嘅係一份**副本**，但唔係**可用性**：如果 primary 所在機器死咗，replica 會繼續嘗試從一個已經死咗嘅 master 同步，並且唔會再接受寫入。**Redis Sentinel** 正係填補呢個缺口。Sentinel 係一個獨立、輕量嘅常駐程序，負責監察 master 同 replica；一旦 master 消失夠耐，佢就會將其中一個 replica 提升做新 master，並且重寫拓撲，令其餘 replica 轉而跟隨新 master。
 
 一套 Sentinel 部署有三重角色：**primary**（接受寫入）、一個或多個 **replica**（讀副本兼故障轉移候選），以及**三個或以上 Sentinel 程序**（監察者）。三個係實務上嘅最低要求，因為 Sentinel 需要大多數（majority）才能做決定。得兩個 Sentinel 嘅話，掛咗一個就剩低一個獨木橋，無法達到大半，failover 根本唔會發生 —— 即係最需要 failover 嘅時刻偏偏失效。
 
@@ -54,7 +54,7 @@ sentinel parallel-syncs mymaster 1
 sentinel auth-pass mymaster "strong-password"
 ```
 
-當中有兩個參數主導表現。`down-after-milliseconds` 決定偵測延遲，同時亦決定誤判風險 —— 調得太低，網絡抖一抖就觸發 failover，後果係客戶端要重連、舊 master 被降級，非常扰民。`failover-timeout` 則限制整個流程上限。數據中心內網絡穩定嘅話，常見做法係偵測 5000 毫秒、超時 60000 毫秒，通常情況下十秒內可以復原。
+當中有兩個參數主導表現。`down-after-milliseconds` 決定偵測延遲，同時亦決定誤判風險 —— 調得太低，網絡抖一抖就觸發 failover，後果係客戶端要重連、舊 master 被降級，非常擾民。`failover-timeout` 則限制整個流程上限。數據中心內網絡穩定嘅話，常見做法係偵測 5000 毫秒、超時 60000 毫秒，通常情況下十秒內可以復原。
 
 客戶端方面最關鍵嘅一點：支援 Sentinel 嘅 client 會訂閱 `+switch-master`（或者輪詢 `SENTINEL get-master-addr-by-name mymaster`）並連去新 master。如果應用寫死 `localhost:6379` 又唔用 Sentinel-aware client library，Sentinel 等於白設 —— failover 發生咗，但應用仲係連住一個已降級嘅 replica，會收到 `READONLY You can't write against a read only replica` 嘅錯誤。另外要記住 Sentinel 解決嘅係節點故障，唔係資料遺失：異步複製可能會損失最後幾毫秒嘅寫入；而 Sentinel 亦唔會幫你分片，要分片就得用 Cluster，兩者兼備就要靠託管方案。
 

@@ -33,14 +33,14 @@ Resource subscriptions are the more granular feature. With `resources: { subscri
 
 ### 中文
 
-一個提供上千個檔案、三百個 prompt 或八十個工具的伺服器，若一次過全部回傳會帶來問題：訊息體積龐大、host 的 context window 受影響、來回也變慢。因此 MCP 在四個列表操作上支援 **cursor-based pagination**（游標式分頁）——`resources/list`、`resources/templates/list`、`prompts/list` 與 `tools/list`。這個模型刻意做得很簡單：伺服器回傳一頁結果連同可選的 `nextCursor`；client 把該游標放進下一次請求的 `params`；當 `nextCursor` 不存在，即代表已到尾。
+一個提供上千個檔案、三百個 prompt 或八十個工具的伺服器，若一次過全部回傳會帶來問題：訊息體積龐大、host 的 context window 受影響、來回也變慢。因此 MCP 在四個列表操作上支援 **cursor-based pagination**（遊標式分頁）——`resources/list`、`resources/templates/list`、`prompts/list` 與 `tools/list`。這個模型刻意做得很簡單：伺服器回傳一頁結果連同可選的 `nextCursor`；client 把該遊標放進下一次請求的 `params`；當 `nextCursor` 不存在，即代表已到尾。
 
 ```json
 { "jsonrpc": "2.0", "id": 123,
   "result": { "resources": [ ... ], "nextCursor": "eyJwYWdlIjogM30=" } }
 ```
 
-有兩條規則令這套做法在實務上成立。第一，游標是 **opaque**（不透明）的：client 不得解析、修改或假定其格式，亦不得跨 session 儲存——伺服器可自由編碼成任何形式（位移量、keyset 位置、簽署過的 blob），亦可在不同呼叫之間改變。第二，頁面大小由伺服器決定，client 不得假定固定數值。假設「每頁 50 筆」的 client，遇上回傳 10 筆的伺服器就會壞掉。失效的游標應回傳 JSON-RPC 錯誤碼 `-32602`（Invalid params），這也是伺服器應該驗證游標、而不是直接崩潰的理由。
+有兩條規則令這套做法在實務上成立。第一，遊標是 **opaque**（不透明）的：client 不得解析、修改或假定其格式，亦不得跨 session 儲存——伺服器可自由編碼成任何形式（位移量、keyset 位置、簽署過的 blob），亦可在不同呼叫之間改變。第二，頁面大小由伺服器決定，client 不得假定固定數值。假設「每頁 50 筆」的 client，遇上回傳 10 筆的伺服器就會壞掉。失效的遊標應回傳 JSON-RPC 錯誤碼 `-32602`（Invalid params），這也是伺服器應該驗證遊標、而不是直接崩潰的理由。
 
 分頁改變了 host 思考「探索」的方式。host 不需要先把所有工具列齊，模型才有能力做事；先取第一頁、其後按需分頁才是預期做法。同時，分頁意味著工具與資源清單可以便宜地變更而不會弄壞 client——伺服器新增工具時，每個 client 都不必在啟動時重新下載整份目錄。
 

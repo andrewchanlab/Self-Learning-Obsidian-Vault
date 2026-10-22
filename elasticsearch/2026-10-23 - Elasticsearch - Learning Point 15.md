@@ -39,7 +39,7 @@ The fourth concept is **snapshots**, which are incremental, cluster-consistent b
 
 第二個概念係 **translog**，佢就係令「已確認寫入」真正耐得住嘅嘢。每一次 index、update、delete 同 bulk request，都會先寫入 primary 同每一個已分配 replica 嘅 translog，之後先回覆 client 話「搞掂」。per-index 設定 `index.translog.durability` 控制呢件事：預設 `request` 意思係每個 request 都 fsync 同 commit translog，所以已確認嘅寫入就算硬件故障都仲喺度；`async` 就只係每 `index.translog.sync_interval`（預設 5 秒）先 fsync，快好多，但可能會失去最後幾秒已確認嘅寫入。translog 亦會保存未成為 Lucene commit point 嘅 operation；當 shard 崩潰後恢復，Elasticsearch 會重播佢哋。`index.translog.flush_threshold_size`（預設 10 GB）會觸發 flush，避免恢復時間拖得太耐。
 
-第三個概念係 **bulk API**，呢個係 Elasticsearch 最多性能提升嘅單一杠杆。唔使每份 document 行一次 HTTP round trip，而係一次過用 newline 分隔咁多個 operation 送去：
+第三個概念係 **bulk API**，呢個係 Elasticsearch 最多性能提升嘅單一槓桿。唔使每份 document 行一次 HTTP round trip，而係一次過用 newline 分隔咁多個 operation 送去：
 
 ```bash
 curl -X POST "localhost:9200/_bulk" -H 'Content-Type: application/x-ndjson' -d '

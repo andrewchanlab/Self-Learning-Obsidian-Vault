@@ -56,7 +56,7 @@ Flask 本質上是 **WSGI** 框架。WSGI 是 Python 標準中「網頁伺服器
 
 這是 Flask 最常被誤解的一點。async 的價值在於「單一視圖內部的並行」，而不是「同時處理更多請求」。如果某個端點要同時查三個慢的第三方 API，async 視圖配合 `asyncio.gather` 可以把延遲由三者的總和降到最大者，而 worker 在期間仍然是忙碌的。反過來，若工作屬於 CPU 密集型——圖片縮放、產生 PDF、密集數值運算——async 反而更糟，因為 event loop 是單執行緒的，阻塞的工作會拖慢同一個 loop 上的所有東西。
 
-第二個更隱蔽的陷阱是資源生命週期。由於每個請求都有一個專屬的 event loop，並在 coroutine 結束時被關閉，凡是与 loop 綁定的資源都不能跨請求共用。模組層級的 `httpx.AsyncClient()` 看似正常，第一個請求回 200，第二個卻拋出 `RuntimeError: Event loop is closed`——因為它的連線池屬於第一個 loop。修正方法是在每個請求內建立並關閉 client：
+第二個更隱蔽的陷阱是資源生命週期。由於每個請求都有一個專屬的 event loop，並在 coroutine 結束時被關閉，凡是與 loop 綁定的資源都不能跨請求共用。模組層級的 `httpx.AsyncClient()` 看似正常，第一個請求回 200，第二個卻拋出 `RuntimeError: Event loop is closed`——因為它的連線池屬於第一個 loop。修正方法是在每個請求內建立並關閉 client：
 
 ```python
 import httpx

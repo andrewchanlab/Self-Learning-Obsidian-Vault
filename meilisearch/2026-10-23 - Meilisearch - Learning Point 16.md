@@ -60,7 +60,7 @@ Key 係用 `Authorization: Bearer <key>` 標頭送出。舊式嘅 `X-MEILI-API-K
 
 第二層係**網絡層保護**。Meilisearch 監聽 7700 埠，預設情況下任何綁得到嘅地方都可以連入。生產環境應該放喺反向代理或者私網後面，令原始埠從來唔對外暴露，並且喺嗰度做 TLS 終止。Meilisearch 內建嘅保護主要係為咗佢嘅 webhook 同 network 功能：預設拒絕對私網 IP 範圍發出對外請求，正正係防止有人將 webhook URL 指去 `169.254.169.254`（雲端 metadata endpoint）去偷 instance 憑證。你可以刻意用 `--experimental-allowed-ip-networks` 放寬，但放寬之前諗清楚。
 
-第三層係**安全咁搜尋**。有兩個設定做緊大部分功夫。`displayedAttributes` 控制邊啲文件欄位會喺結果入面返回；唔喺清單入面嘅欄位依然會被儲存、依然可以被搜尋，只係唔會出現喺回應中。呢個就係隱藏內部備註、成本價或者管理員專用識別碼嘅乾淨做法，唔使將佢哋由索引移除。`filterableAttributes` 限制邊啲欄位可以用喺 `filter` 表达式，`sortableAttributes` 限制邊啲欄位可以用喺 `sort` —— 兩者都係 allowlist（允許名單），所以使用者唔會排序到一個你根本冇打算公開嘅欄位。注意當中嘅交互：一個 sortable 但唔 displayed 嘅欄位，喺分片環境下可以經由 network endpoint 洩漏值，官方分片文件有明確警告。
+第三層係**安全咁搜尋**。有兩個設定做緊大部分功夫。`displayedAttributes` 控制邊啲文件欄位會喺結果入面返回；唔喺清單入面嘅欄位依然會被儲存、依然可以被搜尋，只係唔會出現喺回應中。呢個就係隱藏內部備註、成本價或者管理員專用識別碼嘅乾淨做法，唔使將佢哋由索引移除。`filterableAttributes` 限制邊啲欄位可以用喺 `filter` 表達式，`sortableAttributes` 限制邊啲欄位可以用喺 `sort` —— 兩者都係 allowlist（允許名單），所以使用者唔會排序到一個你根本冇打算公開嘅欄位。注意當中嘅交互：一個 sortable 但唔 displayed 嘅欄位，喺分片環境下可以經由 network endpoint 洩漏值，官方分片文件有明確警告。
 
 最後，唔好唔記得 Meilisearch 嘅操作係**非同步**嘅。加文件回傳嘅係一個 task 而唔係結果；你要輪詢 `/tasks`（可以用 `statuses` 過濾 —— `enqueued`、`processing`、`succeeded`、`failed`、`canceled`）去知道索引完成咗未。呢點喺安全上好重要，因為一個 task 可能喺你以為佢成功咗之後先失敗，而 `error` 物件會話你知點解。一條穩健嘅管線必須檢查 task 狀態，將失敗 task 當成失敗操作處理，而唔係當作成功。
 

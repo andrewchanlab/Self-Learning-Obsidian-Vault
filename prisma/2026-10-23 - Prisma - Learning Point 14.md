@@ -63,7 +63,7 @@ Why does this matter? Because the usual objection to "just write raw SQL" is tha
 
 ### 中文
 
-ORM 基本上係一個承諾：你好少需要自己寫 SQL。Prisma 喺絕大部分 query 上守得住呢個承諾 —— 但有一啲 query 本身就唔適合用 query builder 表达：帶 window function 嘅報表查詢、recursive CTE、要用 legacy 語法嘅 `FULL OUTER JOIN`、Postgres 專屬嘅 `tsvector` 搜尋，或者 DBA 親手調校過、一早知好使嘅 query。Prisma 提供兩個出口：`$queryRaw` 同 `$executeRaw`；但更加有趣嘅係一個較新嘅嘢 —— **TypedSQL**。
+ORM 基本上係一個承諾：你好少需要自己寫 SQL。Prisma 喺絕大部分 query 上守得住呢個承諾 —— 但有一啲 query 本身就唔適合用 query builder 表達：帶 window function 嘅報表查詢、recursive CTE、要用 legacy 語法嘅 `FULL OUTER JOIN`、Postgres 專屬嘅 `tsvector` 搜尋，或者 DBA 親手調校過、一早知好使嘅 query。Prisma 提供兩個出口：`$queryRaw` 同 `$executeRaw`；但更加有趣嘅係一個較新嘅嘢 —— **TypedSQL**。
 
 先由 raw 出口講起。`$queryRawUnsafe` 收一個字串，係真係唔安全 —— 呢個就係經典嘅 SQL injection 漏洞來源，因為值一旦被拼入字串，就成為 statement 嘅一部分。不過 Prisma 有提供用 tagged template 寫法嘅版本，佢哋會做參數化（parameterised），所以安全：
 

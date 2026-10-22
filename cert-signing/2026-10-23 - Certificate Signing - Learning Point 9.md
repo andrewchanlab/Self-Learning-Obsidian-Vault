@@ -26,7 +26,7 @@ X.509 憑證是一份關於公鑰的簽署聲明，但上面的簽名只講了�
 
 最先遇見的三個 extension 是 `basicConstraints`、`keyUsage` 同 `extendedKeyUsage`。`basicConstraints` 內的 `cA` 布林值用來分辨 CA 憑證與終端實體憑證，亦可帶 `pathLenConstraint`，限制其下可以再有多少層中介 CA——`pathLenConstraint` 為 0 代表這間 CA 只可以簽發葉端憑證、不可再簽發 CA 憑證，這正是「簽發 CA」應有的權限。`keyUsage` 是一個位元遮罩，列出容許的密碼操作：`digitalSignature`（簽署）、`keyEncipherment`（RSA 金鑰傳輸）、`keyCertSign`（簽發下屬 CA 憑證）、`cRLSign`（簽發撤銷清單）。`extendedKeyUsage`（EKU）則是應用層面的清單：`serverAuth`（1.3.6.1.5.5.7.3.1）代表 TLS 伺服器、`clientAuth`、`codeSigning`、`emailProtection`、`timeStamping`。
 
-容易令人困惑之處在於：「這把金鑰可以被使用」與「這把金鑰可以被用於 *這個* 用途」是兩個不同的聲明，憑證理應同時表達兩者。一張 `keyUsage = digitalSignature, keyEncipherment` 而 `extendedKeyUsage = serverAuth` 的伺服器憑證意思是：用它證明伺服器身分，並用它包裝 TLS 會話金鑰。用於双向 TLS 的使用者端憑證則改用 `clientAuth`。一張憑證可以完全密碼學有效卻不適合該工作——瀏覽器會拒絕 EKU 不容許該用途的憑證，因此「curl 正常但 API client 不行」是常見又令人費解的症狀。
+容易令人困惑之處在於：「這把金鑰可以被使用」與「這把金鑰可以被用於 *這個* 用途」是兩個不同的聲明，憑證理應同時表達兩者。一張 `keyUsage = digitalSignature, keyEncipherment` 而 `extendedKeyUsage = serverAuth` 的伺服器憑證意思是：用它證明伺服器身分，並用它包裝 TLS 會話金鑰。用於雙向 TLS 的使用者端憑證則改用 `clientAuth`。一張憑證可以完全密碼學有效卻不適合該工作——瀏覽器會拒絕 EKU 不容許該用途的憑證，因此「curl 正常但 API client 不行」是常見又令人費解的症狀。
 
 在 CA 層面，`nameConstraints` 限制某 CA 可發證的命名空間，例如把某企業 CA 限制在 `example.com` 與 `.corp.example.com` 之內；大型機構正是靠它，讓旗下許多內部團隊各自營運 CA 而同時確保沒有任何一方能為 `google.com` 發證。`Subject Alternative Name`（SAN）列出憑證涵蓋的網域與 IP；`Authority Key Identifier` 與 `Subject Key Identifier` 則是雜湊值，讓建構憑證鏈的軟件能可靠地將簽發者與其簽發的憑證配對。最後 `Certificate Policies`（CA/Browser Forum 使用的 OID 弧 2.23.140.1.2.1 為 domain-validated、.2 為 organisation-validated、.3 為 individual-validated）讓 CA 公佈自己採用了哪一級驗證，信賴方亦可檢查自己要求的政策是否真的存在於憑證之中。
 

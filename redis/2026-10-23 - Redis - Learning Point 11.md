@@ -74,13 +74,13 @@ Hash field expiration (Redis 7.4+) gives individual fields their own TTL, so one
 ## Diagram
 ```mermaid
 flowchart TD
-    A[HSET session:abc user_id created_at perm:read perm:write] --> B[HEXPIRE session:abc 300 FIELDS 2 perm:read perm:write]
+    A["HSET session:abc user_id created_at perm:read perm:write"] --> B["HEXPIRE session:abc 300 FIELDS 2 perm:read perm:write"]
     B --> C{Per-field TTL stored}
-    C --> D[HPTTL perm:read = 300]
-    C --> E[HPTTL user_id = -1 (no TTL)]
+    C --> D["HPTTL perm:read = 300"]
+    C --> E["HPTTL user_id = -1 (no TTL)"]
     C --> F{Time passes}
-    F --> G[perm:read and perm:write deleted automatically]
-    F --> H[user_id and created_at survive]
+    F --> G["perm:read and perm:write deleted automatically"]
+    F --> H["user_id and created_at survive"]
     G --> I{Any non-expiring field left?}
     I -->|Yes| H
     I -->|No| J[Key removed automatically]

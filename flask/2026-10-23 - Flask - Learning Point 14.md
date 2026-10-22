@@ -108,7 +108,7 @@ sequenceDiagram
     F->>F: session["user_id"] = 42
     F->>S: HMAC-SHA256(serialize(session))
     S-->>F: signature
-    F-->>B: Set-Cookie: session=...; HttpOnly; Secure; SameSite=Lax
+    F-->>B: Set-Cookie session - HttpOnly, Secure, SameSite=Lax
     B->>F: GET /profile (sends cookie)
     F->>S: verify signature (current key, then fallbacks)
     S-->>F: valid / invalid

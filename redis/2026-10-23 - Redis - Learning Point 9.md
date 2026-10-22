@@ -40,7 +40,7 @@ Cluster 節點之間**唔會代轉**（proxy）請求。如果你將 `GET x` 送
 (error) MOVED 3999 127.0.0.1:6381
 ```
 
-**客户端**要自己處理重定向，並且快取「槽 → 節點」嘅對照表。`MOVED` 代表槽位**永久**搬咗，客户端要更新對照表再重試；`ASK` 則係遷移進行中嘅**臨時**重定向，客户端只可以將嗰一次命令加上 `ASKING` 送到目標節點，並且**唔好**更新對照表。兩者搞混係好常見嘅 bug 來源 —— 將 `ASK` 當成永久搬遷，會令客户端對集群狀態嘅理解出錯。
+**客戶端**要自己處理重定向，並且快取「槽 → 節點」嘅對照表。`MOVED` 代表槽位**永久**搬咗，客戶端要更新對照表再重試；`ASK` 則係遷移進行中嘅**臨時**重定向，客戶端只可以將嗰一次命令加上 `ASKING` 送到目標節點，並且**唔好**更新對照表。兩者搞混係好常見嘅 bug 來源 —— 將 `ASK` 當成永久搬遷，會令客戶端對集群狀態嘅理解出錯。
 
 對開發者最影響嘅一點係：**多 key 命令必須喺同一個槽**。`MGET a b c` 只有喺三個 key 都雜湊到同一槽先合法，否則節點會回 `CROSSSLOT`。逃生門係 **hash tag（雜湊標籤）**：如果 key 內含一對大括號，Redis 只會雜湊大括號入面嘅內容。所以 `user:{1001}:profile` 同 `user:{1001}:settings` 一定喺同一槽，可以用同一段 Lua 腳本或者 `MGET` 一次過處理。實務原則係用「聚合體」嘅識別碼做標籤 —— 例如租戶、戶口、購物車 —— 絕對唔好用單筆記錄嘅 ID，否則同一個客戶嘅所有 key 會全部撞去同一個節點，造成 hot slot。
 
@@ -58,13 +58,13 @@ Redis Cluster splits keys across 16384 fixed hash slots so nodes can be added or
 ## Diagram
 ```mermaid
 flowchart TD
-    C[Client] -->|GET x| N1[Node A :7000]
-    N1 -->|slot 3999 not owned| E[MOVED 3999 127.0.0.1:6381]
+    C[Client] -->|GET x| N1["Node A :7000"]
+    N1 -->|slot 3999 not owned| E["MOVED 3999 127.0.0.1:6381"]
     E --> C
-    C -->|retry| N2[Node B :6381 owns slot 3999]
+    C -->|retry| N2["Node B :6381 owns slot 3999"]
     N2 --> V[Value]
-    N1 -.->|reshard in progress| A[ASK 3999 node B + ASKING]
+    N1 -.->|reshard in progress| A["ASK 3999 node B + ASKING"]
     A -.-> C
-    K1[user:{1001}:profile] -->|CRC16 of 1001| S[Slot 8123]
-    K2[user:{1001}:settings] -->|same slot| S
+    K1["user:{1001}:profile"] -->|CRC16 of 1001| S["Slot 8123"]
+    K2["user:{1001}:settings"] -->|same slot| S
 ```

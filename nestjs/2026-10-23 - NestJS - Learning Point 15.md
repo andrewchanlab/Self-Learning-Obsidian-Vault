@@ -166,7 +166,7 @@ flowchart TD
     B --> C[SwaggerModule.createDocument]
     C --> D[Spec built from controller decorators]
     D --> E[SwaggerModule.setup v1/docs and v2/docs]
-    F[Clients] --> G[/v1/users and /v2/users]
+    F[Clients] --> G["/v1/users and /v2/users"]
     G --> H[Controller version array]
     H --> I[Handler decorated with Version]
 ```
