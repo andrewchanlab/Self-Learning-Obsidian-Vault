@@ -30,7 +30,7 @@ st.write("This text is never recomputed when the slider moves.")
 
 The performance benefit is direct: if the expensive part of your app is a query that depends on one slider, moving that slider now re-executes only the fragment, not the whole dashboard. This is the difference between a two-second wait and a two-hundred-millisecond one, and it is why fragments are the recommended structure for anything that looks like a real-time dashboard.
 
-There are rules to know. Values produced inside a fragment are **not** automatically visible to the rest of the app; if the wider script needs them, store them in `st.session_state`. A fragment that renders into a container created outside itself will **accumulate** elements on each fragment rerun, because the container is not cleared — so either let the fragment draw directly, or clear the container explicitly. To force a rerun from inside a fragment, call `st.rerun()`; to rerun only the fragment itself, use `st.rerun(scope="fragment")`. And `run_every` turns a fragment into a polling panel: `st.fragment(run_every="5s")` refreshes that section every five seconds while the session is active, even if nothing is clicked — perfect for a "last updated" tile or a live status board.
+There are rules to know. Values produced inside a fragment are **not** automatically visible to the rest of the app; if the wider script needs them, store them in `st.session_state`. When a fragment writes elements into a container created outside itself, Streamlit **clears and redraws** that container's fragment-written content on each fragment rerun — the surrounding content keeps its position and is unaffected. (That does require the container to have received at least one write during the initial full app run.) To force a rerun from inside a fragment, call `st.rerun()`; to rerun only the fragment itself, use `st.rerun(scope="fragment")`. And `run_every` turns a fragment into a polling panel: `st.fragment(run_every="5s")` refreshes that section every five seconds while the session is active, even if nothing is clicked — perfect for a "last updated" tile or a live status board.
 
 ```python
 @st.fragment(run_every=5)
@@ -64,7 +64,7 @@ st.write("呢段文字喺滑桿郁動時唔會重新運算。")
 
 性能上的好處很直接：如果 app 最昂貴的部分是一條依賴單一滑桿的查詢，把滑桿移入 fragment 之後，郁動滑桿只會重新執行該 fragment，而唔係整個儀表板。兩秒的等待與兩百毫秒的等待之間的差距，正正是 fragment 成為推薦結構的原因。
 
-有幾條規則要記住。Fragment 內產生的值**不會**自動讓外部程式碼看見；如果外層需要，就把它們存入 `st.session_state`。若 fragment 把內容寫進由外部建立的容器，每次 fragment 重跑時元素會**累積**（因為該容器不會被清空）—— 所以要嘛讓 fragment 直接繪製，要嘛自己顯式清理容器。在 fragment 內想強制重跑，呼叫 `st.rerun()`；只想重跑該 fragment 自身，就用 `st.rerun(scope="fragment")`。而 `run_every` 會把 fragment 變成輪詢面板：`st.fragment(run_every="5s")` 會在 session 活躍期間每五秒刷新一次該區段，即使使用者完全沒有操作 —— 非常適合「最後更新」卡片或即時狀態板。
+有幾條規則要記住。Fragment 內產生的值**不會**自動讓外部程式碼看見；如果外層需要，就把它們存入 `st.session_state`。當 fragment 把內容寫進由外部建立的容器，Streamlit 會在每次 fragment 重跑時**清空並重繪**該容器中由 fragment 寫入的內容（容器內其他部分的位置同內容不受影響）；但該容器必須在首次完整執行時已經接收過至少一次寫入。在 fragment 內想強制重跑，呼叫 `st.rerun()`；只想重跑該 fragment 自身，就用 `st.rerun(scope="fragment")`。而 `run_every` 會把 fragment 變成輪詢面板：`st.fragment(run_every="5s")` 會在 session 活躍期間每五秒刷新一次該區段，即使使用者完全沒有操作 —— 非常適合「最後更新」卡片或即時狀態板。
 
 ```python
 @st.fragment(run_every=5)

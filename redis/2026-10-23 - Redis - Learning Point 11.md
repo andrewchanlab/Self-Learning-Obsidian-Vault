@@ -12,20 +12,20 @@ created: 2026-10-23
 
 Until Redis 7.4, expiration existed at exactly one level: the **key**. `SETEX session:abc 3600 "..."` sets a deadline for the entire value, and when it fires, the whole key disappears. That granularity is awkward for a very common data shape — a **session or cart hash** where different fields logically expire at different times. A session hash typically holds `user_id`, `created_at`, `last_seen`, a list of `perm:*` flags, and a `refresh_token`. Some of those should live for hours, some for minutes, and some (like `created_at`) should live forever as an audit field. With key-level TTL only, you have two bad options: use a separate key per field (which destroys atomicity — updating two fields becomes two commands, so a crash between them leaves the hash inconsistent), or pick one TTL for everything (which either expires your audit data early or keeps stale flags around too long).
 
-Redis 7.4 added **hash field expiration**, which gives each *field* inside a hash its own TTL. The commands are `HEXPIRE`, `HPEXPIRE`, `HEXPIREAT`, `HPEXPIREAT`, `HPTTL`, `HPERSIST`, and `HPEXPIRETIME`:
+Redis 7.4 added **hash field expiration**, which gives each *field* inside a hash its own TTL. The commands are `HEXPIRE`, `HPEXPIRE`, `HEXPIREAT`, `HPEXPIREAT`, `HTTL`, `HPTTL`, `HPERSIST`, `HEXPIRETIME` and `HPEXPIRETIME` — the `HP` prefix means milliseconds, the plain form means seconds:
 
 ```
 > HSET session:abc user_id u_42 created_at 1729600000 perm:read 1 perm:write 1
 > HEXPIRE session:abc 300 FIELDS 2 perm:read perm:write
-1
-1
-> HPTTL session:abc user_id
--1
-> HPTTL session:abc perm:read
-300
+1) (integer) 1
+2) (integer) 1
+> HPTTL session:abc FIELDS 1 user_id
+1) (integer) -1
+> HPTTL session:abc FIELDS 1 perm:read
+1) (integer) 299998
 ```
 
-The reply is a list, one integer per field: `1` means the TTL was set, `0` means it was not set because a condition failed, `-2` means the field does not exist, and `-1` (from `HPTTL`) means the field exists but has no expiration. The `FIELDS numfields` argument is mandatory in the 7.4 syntax — you must state how many fields follow, which lets the server validate the argument list without ambiguity.
+The reply is a list, one integer per field: `1` means the TTL was set, `0` means it was not set because a condition failed, `2` means the field was deleted immediately (a zero TTL or a timestamp in the past), and `-2` means the field does not exist. The read commands answer `-1` when the field exists but has no expiration set. The `FIELDS numfields` argument is mandatory in the 7.4 syntax — you must state how many fields follow, which lets the server validate the argument list without ambiguity. Note the units: `HTTL` returns seconds and `HPTTL` returns milliseconds, so the value just above (`299998`) is roughly the 300-second TTL you set.
 
 Conditional updates are supported with `NX`, `XX`, `GT` and `LT`. `NX` sets the TTL only if the field currently has none, `XX` only if it already has one, `GT` only if the new expiry is later, `LT` only if it is sooner. A field with no TTL is treated as infinite for the purposes of `GT` and `LT`, so `GT` on a persistent field will always succeed and `LT` on a persistent field will always fail. This makes the commands safe to use in a "refresh the deadline only if it is close to expiring" pattern without a read-modify-write race.
 
@@ -39,20 +39,20 @@ Finally, note that field expiration is a Redis 7.4+ feature. On older servers th
 
 喺 Redis 7.4 之前，到期功能（expiration）只有一個層次：**key**。`SETEX session:abc 3600 "..."` 設定咗成個 value 嘅死線，時間一到，個 key 就整個消失。呢種粒度對一個好常見嘅資料形狀頗為尷尬 —— **session 或者購物車 hash**，入面唔同欄位嘅邏輯生命週期其實唔同。一個 session hash 通常裝住 `user_id`、`created_at`、`last_seen`、一串 `perm:*` 權限旗標同一個 `refresh_token`。其中一啲應該存活幾個鐘，一啲只需幾分鐘，而 `created_at` 呢類審計欄位應該永遠保留。如果只有 key 級 TTL，你只有兩個都唔理想嘅選擇：用每個欄位一個 key（會破壞原子性 —— 更新兩個欄位變成兩條指令，中途當機就會令 hash 狀態不一致），或者全部欄位用同一個 TTL（於是要麼提早刪咗審計資料，要麼令過期嘅權限旗標殘留太耐）。
 
-Redis 7.4 加入咗 **hash field expiration（雜湊欄位級過期）**，令 hash 入面每個 *field* 都擁有自己嘅 TTL。相關指令包括 `HEXPIRE`、`HPEXPIRE`、`HEXPIREAT`、`HPEXPIREAT`、`HPTTL`、`HPERSIST` 同 `HPEXPIRETIME`：
+Redis 7.4 加入咗 **hash field expiration（雜湊欄位級過期）**，令 hash 入面每個 *field* 都擁有自己嘅 TTL。相關指令包括 `HEXPIRE`、`HPEXPIRE`、`HEXPIREAT`、`HPEXPIREAT`、`HTTL`、`HPTTL`、`HPERSIST`、`HEXPIRETIME` 同 `HPEXPIRETIME` —— 帶 `HP` 前綴嘅以毫秒計，唔帶嘅以秒計：
 
 ```
 > HSET session:abc user_id u_42 created_at 1729600000 perm:read 1 perm:write 1
 > HEXPIRE session:abc 300 FIELDS 2 perm:read perm:write
-1
-1
-> HPTTL session:abc user_id
--1
-> HPTTL session:abc perm:read
-300
+1) (integer) 1
+2) (integer) 1
+> HPTTL session:abc FIELDS 1 user_id
+1) (integer) -1
+> HPTTL session:abc FIELDS 1 perm:read
+1) (integer) 299998
 ```
 
-回覆係一個列表，每個欄位一個整數：`1` 代表成功設定 TTL，`0` 代表因為條件不符而未設定，`-2` 代表欄位唔存在，而 `HPTTL` 回 `-1` 代表欄位存在但冇到期設定。7.4 語法入面 `FIELDS numfields` 係必須嘅 —— 你要聲明跟住有幾多個欄位，令伺服器可以無歧義噉驗證參數列表。
+回覆係一個列表，每個欄位一個整數：`1` 代表成功設定 TTL，`0` 代表因為條件不符而未設定，`2` 代表欄位即時被刪除（TTL 為零或者時間點已經過去），而 `-2` 代表欄位唔存在；查詢指令回 `-1` 就代表欄位存在但冇到期設定。7.4 語法入面 `FIELDS numfields` 係必須嘅 —— 你要聲明跟住有幾多個欄位，令伺服器可以無歧義噉驗證參數列表。留意單位：`HTTL` 回秒數、`HPTTL` 回毫秒數，所以上面示範嘅 `299998` 就對應你設定嘅 300 秒 TTL。
 
 條件更新方面支援 `NX`、`XX`、`GT` 同 `LT`。`NX` 只喺欄位目前冇 TTL 時設定；`XX` 只喺已經有 TTL 時設定；`GT` 只喺新到期時間更遲時設定；`LT` 只喺更早時設定。冇 TTL 嘅欄位喺 `GT` / `LT` 比較時當作無限大，所以對持久欄位行 `GT` 一定成功，行 `LT` 就一定失敗。呢個特性令你可以安全咁寫「只有當死線快到期時先刷新」嘅邏輯，完全唔需要先讀後寫嘅競態處理。
 
@@ -76,7 +76,7 @@ Hash field expiration (Redis 7.4+) gives individual fields their own TTL, so one
 flowchart TD
     A["HSET session:abc user_id created_at perm:read perm:write"] --> B["HEXPIRE session:abc 300 FIELDS 2 perm:read perm:write"]
     B --> C{Per-field TTL stored}
-    C --> D["HPTTL perm:read = 300"]
+    C --> D["HPTTL perm:read = 299998 ms"]
     C --> E["HPTTL user_id = -1 (no TTL)"]
     C --> F{Time passes}
     F --> G["perm:read and perm:write deleted automatically"]
