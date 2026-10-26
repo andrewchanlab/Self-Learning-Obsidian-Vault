@@ -24,7 +24,7 @@ Finally, there's a quiet but important shift: some cloud-first organisations are
 
 RADIUS 誕生於一個以在地交換機和本機使用者資料庫為主的年代。今天，許多組織把身分放在雲端 IdP（Okta、Entra ID、Google Workspace），網路在雲或混合環境，使用者的裝置根本不會接觸企業 LAN。這就產生張力：RADIUS 講的是帳密或 EAP，現代身分講的是 SAML assertion 和 OIDC token。要怎麼接起來？常見模式是讓 RADIUS 伺服器扮演 SAML/OIDC 的 relying party —— 它在本機終結 EAP 隧道，再呼叫 IdP 的 API 驗證帳密或取得群組成員資格。這有時叫「RADIUS 到 IdP 的仲介」。FreeRADIUS 可以用 rlm_rest 模組呼叫 OIDC introspection endpoint，或用 rlm_ldap 對接一個從 IdP 同步過來的雲端目錄。
 
-第二種模式是以憑證為基礎的 EAP-TLS，配合雲端管理的憑證。Supplicant 不用密碼，而是出示由雲端 PKI（例如繫結 IdP 的 SCEP 或 EST 服務）簽發的使用者端憑證。RADIUS 伺服器驗證憑證鏈，並把憑證的 SAN 或 subject 對應到使用者身分。這消除了密碼散落問題，對受管裝置很有效，但要求裝置先完成註冊才能連網 —— 這是雞生蛋蛋生雞的問題，通常用 onboarding SSID 或雲端 MDM 註冊流程解決。
+第二種模式是以憑證為基礎的 EAP-TLS，配合雲端管理的憑證。Supplicant 不用密碼，而是出示由雲端 PKI（例如繫結 IdP 的 SCEP 或 EST 服務）簽發的使用者端憑證。RADIUS 伺服器驗證憑證鏈，並把憑證的 SAN 或 subject 對應到使用者身分。這消除了密碼散落問題，對受管裝置很有效，但要求裝置先完成註冊才能連網 —— 這是雞生蛋、生蛋的問題的問題，通常用 onboarding SSID 或雲端 MDM 註冊流程解決。
 
 第三種模式是「雲端 NAC」或「網路存取仲介」—— 一個 SaaS 服務，透過 RadSec（RADIUS over TLS，埠 2083）接收來自地端或雲端網路裝置的 RADIUS 請求，在雲端評估政策，回傳 Access-Accept/Reject。Cisco、Aruba、Juniper 等廠商都提供與此整合的雲端管理平面。優點是跨站點、跨雲集中政策；缺點是每次登入都依賴到雲端供應商的網際網路連線，因此需要本機快取或備援路徑。這就是為什麼許多部署保留一臺地端 RADIUS 當次要，雲端當主要，並在 NAS 設定 failover。
 

@@ -10,7 +10,7 @@ created: 2026-10-26
 
 ## English
 
-Every Meilisearch index needs a primary key: a field whose value uniquely identifies each document. Meilisearch can infer it — it looks for an attribute whose name ends in `id` (for example `id`, `movieId`, or `product_id`) — but relying on inference is risky because it can pick the wrong field or fail when there are several candidates. Best practice is to declare the primary key explicitly when you create the index or when you add the first batch of documents. The value must be either an integer or a string containing only alphanumeric characters, hyphens, and underscores. Once set, the primary key is immutable for that index; changing it means creating a new index and re-importing.
+Every Meilisearch index needs a primary key: a field whose value uniquely identifies each document. Meilisearch can infer it — it looks for an attribute whose name ends in `id` in a case-insensitive manner (for example `id`, `uid`, `BookId`, or `product_id`) — but relying on inference is risky: if it finds multiple attributes ending in `id`, or none at all, the engine returns an error rather than guessing, and the error codes `index_primary_key_multiple_candidates_found` and `index_primary_key_no_candidate_found` tell you exactly what went wrong. Best practice is to declare the primary key explicitly when you create the index or when you add the first batch of documents. The value must be either an integer or a string containing only alphanumeric characters, hyphens, and underscores. Once set, the primary key is immutable for that index; changing it means creating a new index and re-importing.
 
 Why does the primary key matter so much? Because it defines identity for upserts. When you add a document whose primary key already exists, Meilisearch replaces the existing document rather than creating a duplicate. This is how you keep the index in sync with your database without tracking which documents changed: just re-send the current version and the engine overwrites. If your primary key is unstable (for example, a slug that can change when a title is edited), you will end up with orphaned duplicates.
 
@@ -22,7 +22,7 @@ Finally, think about denormalization. A search index is not a relational databas
 
 ## 中文
 
-每個 Meilisearch 索引都需要一個主鍵（primary key）：一個欄位，佢嘅值可以唯一識別每份檔案。Meilisearch 可以自己推斷——佢會搵一個名稱以 `id` 結尾嘅屬性（例如 `id`、`movieId` 或 `product_id`）——但依賴推斷有風險，因為佢可能揀錯欄位，或者喺有多個候選欄位嘅時候失敗。最佳做法係喺建立索引嗰陣、或者喺加入第一批檔案嗰陣，明確宣告主鍵。個值一定要係整數，或者係一個只包含英文字母數字、連字號同底線嘅字串。主鍵一經設定，對嗰個索引嚟講就係不可變（immutable）嘅；要改就等於要建立一個新索引再重新匯入。
+每個 Meilisearch 索引都需要一個主鍵（primary key）：一個欄位，佢嘅值可以唯一識別每份檔案。Meilisearch 可以自己推斷——佢會以不分大小寫嘅方式，搵一個名稱以 `id` 結尾嘅屬性（例如 `id`、`uid`、`BookId` 或 `product_id`）——但依賴推斷有風險：搵到多個以 `id` 結尾嘅屬性，或者完全搵唔到，引擎都會直接回傳錯誤而唔會亂猜，錯誤碼分別係 `index_primary_key_multiple_candidates_found` 同 `index_primary_key_no_candidate_found`，直接話你知邊度出咗事。最佳做法係喺建立索引嗰陣、或者喺加入第一批檔案嗰陣，明確宣告主鍵。個值一定要係整數，或者係一個只包含英文字母數字、連字號同底線嘅字串。主鍵一經設定，對嗰個索引嚟講就係不可變（immutable）嘅；要改就等於要建立一個新索引再重新匯入。
 
 點解主鍵咁重要？因為佢定義咗 upsert（有就更新、冇就新增）嘅身份。當你加入一份主鍵已經存在嘅檔案，Meilisearch 會取代現有嗰份檔案，而唔係建立重複項。呢個就係你點樣令索引同資料庫保持同步、又唔使追蹤邊啲檔案改咗嘅方法：直接重新送最新版本，引擎就會覆寫。如果你嘅主鍵唔穩定（例如一個會喺標題被編輯時改變嘅 slug），你就會得到一堆孤立嘅重複檔案。
 

@@ -6,7 +6,7 @@ tags:
 created: 2026-10-27
 ---
 
-# Dynamic Modules: configureModule, forRoot and forFeature
+# Dynamic Modules: forRoot, forRootAsync and forFeature
 
 ## English
 

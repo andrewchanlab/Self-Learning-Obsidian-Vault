@@ -12,9 +12,18 @@ VAULT = Path("/workspace/obsidian-learning")
 
 
 def hkt_date():
-    """Today's date in Asia/Hong_Kong (cron runs at 23:00 UTC = 07:00 HKT)."""
-    from datetime import datetime, timedelta, timezone
-    return (datetime.now(timezone.utc) + timedelta(hours=8)).strftime("%Y-%m-%d")
+    """Today's date in Asia/Hong_Kong.
+
+    The cron job runs in the early UTC hours, so a naive UTC date would roll
+    over a day early relative to Hong Kong time.
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        from datetime import datetime
+        return datetime.now(ZoneInfo("Asia/Hong_Kong")).strftime("%Y-%m-%d")
+    except Exception:
+        from datetime import datetime, timedelta, timezone
+        return (datetime.now(timezone.utc) + timedelta(hours=8)).strftime("%Y-%m-%d")
 
 
 DATE = sys.argv[1] if len(sys.argv) > 1 else hkt_date()
@@ -271,7 +280,14 @@ def write_page(slug, short, num, obj, date):
 
 
 def simplified_hits(text):
-    """Return characters that opencc would convert (i.e. simplified forms present)."""
+    """Return characters that are unambiguously simplified.
+
+    Detection uses s2t (character-level) because s2twp additionally rewrites
+    vocabulary style (文件→檔案, 組件→元件, 用戶→使用者), which would make the
+    vault drift stylistically away from its existing pages. A few characters are
+    valid Traditional in some contexts but flagged by opencc — those are
+    handled by HK_VARIANT_FIXES below, applied contextually.
+    """
     try:
         from opencc import OpenCC
         cc = OpenCC("s2t")
@@ -282,6 +298,25 @@ def simplified_hits(text):
         if "一" <= ch <= "鿿" and cc.convert(ch) != ch:
             hits.add(ch)
     return hits
+
+
+# Characters that opencc's s2t flags but which are valid in Hong Kong usage
+# depending on context. Only the unambiguous HK-standard forms are rewritten.
+HK_VARIANT_FIXES = {
+    "着": "著",   # 着 -> 著 (著/着 both used, but 著 is the HK standard form)
+    "裏": "裡",   # 裏 -> 裡 (avoid mixed glyphs across the vault)
+    "污": "汙",   # 污 -> 汙 (HK standard)
+}
+
+
+def fix_hk_variants(text):
+    """Apply context-safe HK orthographic variants (裏->裡, 污->汙)."""
+    fixed = []
+    for src, dst in HK_VARIANT_FIXES.items():
+        if src in text:
+            text = text.replace(src, dst)
+            fixed.append(src + "->" + dst)
+    return text, fixed
 
 
 def to_traditional(text):
@@ -302,14 +337,41 @@ def fix_simplified(text):
     return to_traditional(text), bad
 
 
-def next_point_num(slug):
-    """Next free 'Learning Point N' number for a topic folder (never reuse)."""
-    nums = []
+# Duplicated CJK runs that are always a generation typo.
+# NOTE: a generic "repeated character" regex is unsafe here — Cantonese and
+# Chinese legitimately use reduplications (往往, 悄悄, 靜靜, 實實, 少少, 遠遠).
+SAFE_DUP_PAIRS = {"蛋蛋": "、蛋"}
+
+
+def fix_repeated_chars(text):
+    """Fix explicitly-listed duplicated CJK typos (e.g. 雞生蛋蛋生雞)."""
+    fixed = []
+    for dup, rep in SAFE_DUP_PAIRS.items():
+        if dup in text:
+            fixed.append(dup)
+            text = text.replace(dup, rep)
+    return text, fixed
+
+
+def next_point_num(slug, date=DATE):
+    """Next free 'Learning Point N' number for a topic folder (never reuse).
+
+    If pages for `date` already exist in this topic, reuse their first number so
+    a re-run overwrites the same batch instead of appending a second batch.
+    """
+    today_nums, all_nums = [], []
     for f in glob.glob(str(VAULT / slug / "*.md")):
-        m = re.search(r"Learning Point (\d+)", os.path.basename(f))
-        if m:
-            nums.append(int(m.group(1)))
-    return (max(nums) + 1) if nums else 1
+        name = os.path.basename(f)
+        m = re.search(r"Learning Point (\d+)", name)
+        if not m:
+            continue
+        n = int(m.group(1))
+        all_nums.append(n)
+        if name.startswith(date):
+            today_nums.append(n)
+    if today_nums:
+        return min(today_nums)
+    return (max(all_nums) + 1) if all_nums else 1
 
 
 def main():
@@ -336,6 +398,12 @@ def main():
                 if bad:
                     print(f"    fixed simplified chars {bad}", flush=True)
                     obj["zh"] = fixed
+                obj["zh"], hk = fix_hk_variants(obj["zh"])
+                if hk:
+                    print(f"    fixed HK variants {hk}", flush=True)
+                obj["zh"], dups = fix_repeated_chars(obj["zh"])
+                if dups:
+                    print(f"    fixed repeated chars {dups}", flush=True)
                 obj["mermaid"] = mermaid_for(topic, obj["title"], obj["en"])
                 p = write_page(slug, short, num, obj, DATE)
                 print(f"  wrote {p.name}", flush=True)
