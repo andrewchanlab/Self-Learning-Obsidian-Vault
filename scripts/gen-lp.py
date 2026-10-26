@@ -9,7 +9,15 @@ import os, re, json, glob, time, urllib.request, urllib.error, sys
 from pathlib import Path
 
 VAULT = Path("/workspace/obsidian-learning")
-DATE = sys.argv[1] if len(sys.argv) > 1 else "2026-10-26"
+
+
+def hkt_date():
+    """Today's date in Asia/Hong_Kong (cron runs at 23:00 UTC = 07:00 HKT)."""
+    from datetime import datetime, timedelta, timezone
+    return (datetime.now(timezone.utc) + timedelta(hours=8)).strftime("%Y-%m-%d")
+
+
+DATE = sys.argv[1] if len(sys.argv) > 1 else hkt_date()
 
 # Load env
 for line in Path("/workspace/.hermes/.env").read_text().splitlines():
@@ -294,14 +302,25 @@ def fix_simplified(text):
     return to_traditional(text), bad
 
 
+def next_point_num(slug):
+    """Next free 'Learning Point N' number for a topic folder (never reuse)."""
+    nums = []
+    for f in glob.glob(str(VAULT / slug / "*.md")):
+        m = re.search(r"Learning Point (\d+)", os.path.basename(f))
+        if m:
+            nums.append(int(m.group(1)))
+    return (max(nums) + 1) if nums else 1
+
+
 def main():
     only = sys.argv[2].split(",") if len(sys.argv) > 2 else None
     created, errors = 0, []
-    for short, topic, slug, start_num in TOPICS:
+    for short, topic, slug, _start_num in TOPICS:
         if only and slug not in only:
             continue
         folder = VAULT / slug
         folder.mkdir(parents=True, exist_ok=True)
+        start_num = next_point_num(slug)
         covered = existing_headings(slug)
         print(f"[{topic}] covered headings: {len(covered)}", flush=True)
         try:
