@@ -5,7 +5,7 @@ Daily learning point generator (DeepSeek / OpenRouter backends).
 Reads index.md, picks fresh angles per active topic, calls an LLM, writes
 dated bilingual pages into each topic folder.
 """
-import os, re, json, glob, time, urllib.request, urllib.error, sys
+import os, re, json, glob, time, urllib.request, urllib.error, sys, difflib
 from pathlib import Path
 
 VAULT = Path("/workspace/obsidian-learning")
@@ -201,6 +201,25 @@ def extract_json(text):
     return json.loads(t[start:end + 1])
 
 
+def norm_heading(h):
+    """Normalise a heading for duplicate comparison: lowercase, strip punctuation."""
+    return re.sub(r"[^a-z0-9]+", " ", (h or "").lower()).strip()
+
+
+def too_similar(title, covered_norm, threshold=0.62):
+    """True if a candidate heading is a near-duplicate of an existing one.
+
+    Exact-match detection misses reworded repeats (e.g. 'Rate Limiting,
+    Idempotency...' vs 'Rate-Limiting by Design: Idempotent Retries...'), so
+    compare normalised headings with a fuzzy ratio as well.
+    """
+    nt = norm_heading(title)
+    for nc in covered_norm:
+        if difflib.SequenceMatcher(None, nt, nc).ratio() >= threshold:
+            return nc
+    return None
+
+
 def existing_headings(slug):
     hs = []
     for f in sorted(glob.glob(str(VAULT / slug / "*.md"))):
@@ -384,14 +403,32 @@ def main():
         folder.mkdir(parents=True, exist_ok=True)
         start_num = next_point_num(slug)
         covered = existing_headings(slug)
+        covered_norm = {norm_heading(h) for h in covered}
         print(f"[{topic}] covered headings: {len(covered)}", flush=True)
         try:
-            out = call_llm(
-                USER.format(topic=topic, covered="\n".join(f"- {h}" for h in covered) or "(none)", n=3),
-                SYSTEM)
-            pts = extract_json(out)
-            if len(pts) < 3:
-                raise ValueError(f"only {len(pts)} points returned")
+            pts = None
+            for attempt in range(3):
+                out = call_llm(
+                    USER.format(topic=topic, covered="\n".join(f"- {h}" for h in covered) or "(none)", n=3),
+                    SYSTEM)
+                cand = extract_json(out)
+                if len(cand) < 3:
+                    raise ValueError(f"only {len(cand)} points returned")
+                dupes = []
+                for c in cand:
+                    hit = too_similar(c.get("title", ""), covered_norm)
+                    if hit:
+                        dupes.append((c.get("title", ""), hit))
+                if not dupes:
+                    pts = cand
+                    break
+                print(f"    attempt {attempt+1} returned duplicate angles: {dupes}; retrying", flush=True)
+                # Feed the offending headings back so the next attempt avoids them
+                covered = covered + [d[0] for d in dupes] + [d[1] for d in dupes]
+                covered_norm |= {norm_heading(d[0]) for d in dupes}
+                covered_norm |= {norm_heading(d[1]) for d in dupes}
+            if pts is None:
+                raise ValueError("could not generate 3 non-duplicate points after 3 attempts")
             for i, obj in enumerate(pts[:3]):
                 num = start_num + i
                 fixed, bad = fix_simplified(obj["zh"])
